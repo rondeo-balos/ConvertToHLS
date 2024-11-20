@@ -14,6 +14,10 @@
         @routes
         @vite(['resources/js/app.js', "resources/js/Pages/{$page['component']}.vue"])
         @inertiaHead
+
+        <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+        <script src="https://cdn.rawgit.com/video-dev/hls.js/18bb552/dist/hls.min.js"></script>
+        <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
     </head>
     <body class="font-sans antialiased">
         @inertia

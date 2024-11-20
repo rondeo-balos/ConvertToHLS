@@ -2,6 +2,17 @@
 
 Creating an HLS (HTTP Live Streaming) dynamically
 
+Install required library
+
+```
+sudo apt update
+sudo apt install ffmpeg
+```
+
+Install Required PHP Packages
+
+`php artisan storage:link`
+
 HLS (HTTP Live Streaming) is widely used for video streaming because of its **flexibility, scalability, and compatibility**. Here's why you might use HLS for your project:
 
 ---
