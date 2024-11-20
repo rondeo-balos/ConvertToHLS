@@ -1,56 +1,70 @@
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import { Head } from '@inertiajs/vue3';
 
-const props = defineProps([ 'playlist' ]);
+
+/** working example from https://github.com/datlife
+ * from this comment https://github.com/sampotts/plyr/issues/1741#issuecomment-640293554
+ * codepen https://codepen.io/datlife/pen/dyGoEXo
+ */
+const props = defineProps(['playlist']);
+const defaultOptions = ref({});
 
 onMounted(() => {
     const videoElement = document.querySelector('video');
-    const player = new Plyr(videoElement, {
-        settings: ['quality'], // Enable quality selector in settings
-    });
+    const source = videoElement.getElementsByTagName("source")[0].src;
 
     if (Hls.isSupported()) {
+        console.log( 'hls supported' );
         const hls = new Hls();
-        hls.loadSource(props.playlist);
-        hls.attachMedia(videoElement);
+        hls.loadSource(source);
 
-        // Handle quality levels when manifest is parsed
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            const availableQualities = hls.levels.map((level, index) => ({
-                label: `${level.height}p`,
-                value: index,
-                default: level.height === 720, // Default to 720p if available
-            }));
+        // From the m3u8 playlist, hls parses the manifest and returns
+        // all available video qualities. This is important, in this approach,
+        // we will have one source on the Plyr player.
+        hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+            console.log( 'done parsing hls' );
+            // Transform available levels into an array of integers (height values).
+            const availableQualities = hls.levels.map( (level) => level.height );
+            console.log( 'available qualities: ', availableQualities );
 
-            // Set default quality
-            const defaultQuality = availableQualities.find((q) => q.default) || availableQualities[0];
-            hls.currentLevel = defaultQuality.value;
-
-            // Update Plyr with quality options
-            player.options.quality = {
-                default: defaultQuality.value,
-                options: availableQualities.map((q) => q.value),
-                forced: true,
-                onChange: (newQuality) => {
-                    hls.currentLevel = newQuality; // Set quality in HLS.js
-                },
+            // Add new qualities to option
+            defaultOptions.value.quality = {
+                default: availableQualities[0],
+                options: availableQualities,
+                // this ensures Plyr to use Hls to update quality level
+                forced: true,        
+                onChange: (e) => updateQuality(e),
             };
 
-            // Refresh Plyr to reflect new quality settings
-            player.config.settings.quality = availableQualities.map((q) => q.value);
-            player.quality = defaultQuality.value;
+            // Initialize here
+            const player = new Plyr(videoElement, defaultOptions.value);
+            console.log( 'done Initialize' );
         });
-
-        // Add HLS instance to global scope for debugging
+        hls.attachMedia(videoElement);
         window.hls = hls;
+        console.log( 'media attached' );
     } else {
-        alert('HLS not supported in this browser');
+        // default options with no quality update in case Hls is not supported
+        const player = new Plyr(videoElement, defaultOptions.value);
+        console.log( 'hls not supported' );
     }
 });
+
+const updateQuality = (newQuality) => {
+    console.log( 'updating quality' );
+    window.hls.levels.forEach( (level, levelIndex) => {
+        if( level.height === newQuality ) {
+            console.log( "Found quality match with " + newQuality );
+            window.hls.currentLevel = levelIndex;
+        }
+    });
+}
 </script>
 
 <template>
     <Head title="Conversion Completed!" />
-    <video id="player" controls playsinline class="!w-full" preload="none"></video>
+    <video id="player" controls playsinline class="!w-full" preload="none">
+        <source type="application/x-mpegURL" :src="playlist">
+    </video>
 </template>

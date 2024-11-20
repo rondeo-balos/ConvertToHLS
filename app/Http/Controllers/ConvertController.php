@@ -80,7 +80,7 @@ class ConvertController extends Controller {
 
         // Process video for each resolution
         foreach ($formats as $resolution => $details) {
-            $format = (new X264())->setKiloBitrate($details['bitrate'])->setAudioCodec("aac");
+            $format = (new X264())->setKiloBitrate($details['bitrate'])->setAdditionalParameters(['-crf', '20'])->setAudioCodec("aac");
 
             // Apply resizing filter
             $video->filters()->resize(new Dimension($details['width'], $details['height']))->synchronize();
@@ -92,8 +92,8 @@ class ConvertController extends Controller {
         // Generate a master playlist
         $masterPlaylist = "#EXTM3U\n";
         foreach ($formats as $resolution => $format) {
-            $bandwidth = $details['bitrate'] * 1000; // Convert kbps to bps
-            $masterPlaylist .= "#EXT-X-STREAM-INF:BANDWIDTH={$bandwidth},RESOLUTION={$details['width']}x{$details['height']}\n";
+            $bandwidth = $format['bitrate'] * 1000; // Convert kbps to bps
+            $masterPlaylist .= "#EXT-X-STREAM-INF:BANDWIDTH={$bandwidth},RESOLUTION={$format['width']}x{$format['height']}\n";
             $masterPlaylist .= "{$resolution}.m3u8\n";
         }
 

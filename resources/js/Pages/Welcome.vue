@@ -19,9 +19,9 @@ const handleUpload = () => {
         <input type="file" @input="form.video = $event.target.files[0]">
         {{ form.errors.video }}
         <progress v-if="form.progress" :value="form.progress.percentage" max="100">
-        {{ form.progress.percentage }}%
+        {{ form.progress?.percentage }}%
         </progress>
-        <span v-show="form.progress.percentage == 100">Processing...</span>
+        <span v-show="form.progress?.percentage == 100">Processing...</span>
         <button type="submit">Submit</button>
     </form>
 
