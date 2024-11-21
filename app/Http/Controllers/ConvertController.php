@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Convert;
+use FFMpeg\Filters\Video\ResizeFilter;
 use Illuminate\Http\Request;
 use FFMpeg\Coordinate\Dimension;
 use FFMpeg\FFMpeg;
@@ -25,7 +26,8 @@ class ConvertController extends Controller {
     public function convert( Request $request ) {
         // Validate the uploaded video
         $request->validate([
-            'video' => 'required|mimes:mp4|max:5242880' // Limit to 5GB for example
+            'video' => 'required|mimes:mp4|max:5242880', // Limit to 5GB for example
+            'resolutions' => 'required'
         ]);
 
         // Get the uploaded file
@@ -47,40 +49,48 @@ class ConvertController extends Controller {
 
         // Process the video with FFmpeg
         $ffmpeg = FFMpeg::create();
-        $video = $ffmpeg->open(storage_path("app/private/{$videoPath}"));
 
         // Define resolutions and corresponding bitrates
         $formats = [
             '240p' => [
-                'bitrate' => 300, // 300 kbps
+                'bitrate' => 500, // 500 kbps
                 'width' => 426,
                 'height' => 240,
             ],
             '360p' => [
-                'bitrate' => 500, // 500 kbps
+                'bitrate' => 1000, // 1000 kbps
                 'width' => 640,
                 'height' => 360,
             ],
             '480p' => [
-                'bitrate' => 1000, // 1000 kbps
+                'bitrate' => 2500, // 2500 kbps
                 'width' => 854,
                 'height' => 480,
             ],
             '720p' => [
-                'bitrate' => 2500, // 2500 kbps
+                'bitrate' => 5000, // 5000 kbps
                 'width' => 1280,
                 'height' => 720,
             ],
             '1080p' => [
-                'bitrate' => 5000, // 5000 kbps
+                'bitrate' => 8000, // 8000 kbps
                 'width' => 1920,
                 'height' => 1080,
             ]
         ];
 
+        // Select only the requested resolutions
+        $formats = array_intersect_key( $formats, array_flip($request->resolutions) );
+
         // Process video for each resolution
         foreach ($formats as $resolution => $details) {
-            $format = (new X264())->setKiloBitrate($details['bitrate'])->setAdditionalParameters(['-crf', '20'])->setAudioCodec("aac");
+            $video = $ffmpeg->open(storage_path("app/private/{$videoPath}"));
+            $format = (new X264())->setKiloBitrate($details['bitrate'])->setAdditionalParameters([
+                '-crf', '10',
+                '-force_key_frames', 'expr:gte(t,n_forced*2)',
+                '-preset', 'fast', // Encoding speed
+                '-hls_list_size', '0'
+            ])->setAudioCodec("aac");
 
             // Apply resizing filter
             $video->filters()->resize(new Dimension($details['width'], $details['height']))->synchronize();
@@ -98,6 +108,9 @@ class ConvertController extends Controller {
         }
 
         file_put_contents("{$hlsDirectory}/master.m3u8", $masterPlaylist);
+        
+        // Delete original video
+        unlink(storage_path("app/private/{$videoPath}"));
 
         //return response()->json(['message' => 'HLS conversion completed!', 'playlist' => "storage/hls/{$filename}/master.m3u8"]);
 

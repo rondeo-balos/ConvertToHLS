@@ -12,12 +12,11 @@ const defaultOptions = ref({});
 
 onMounted(() => {
     const videoElement = document.querySelector('video');
-    const source = videoElement.getElementsByTagName("source")[0].src;
 
     if (Hls.isSupported()) {
         console.log( 'hls supported' );
         const hls = new Hls();
-        hls.loadSource(source);
+        hls.loadSource(props.playlist);
 
         // From the m3u8 playlist, hls parses the manifest and returns
         // all available video qualities. This is important, in this approach,
