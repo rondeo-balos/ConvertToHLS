@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, ref } from 'vue';
+import { nextTick, onMounted, ref } from 'vue';
 const emit = defineEmits([
     'checked'
 ]);
@@ -15,6 +15,12 @@ const props = defineProps({
 });
 
 const checkbox = ref(null);
+
+onMounted(() => {
+    if( model.value.includes( props.value ) ) {
+        checkbox.value.checked = true;
+    }
+});
 
 const checkboxChanged = (event) => {
     nextTick(() => {
@@ -39,5 +45,7 @@ const checkboxChanged = (event) => {
 <template>
     <input
         type="checkbox" :value="value" @change="checkboxChanged" ref="checkbox"
-        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800"/>
+        :class="[
+            'rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800',
+            '!hover:scale-110']"/>
 </template>

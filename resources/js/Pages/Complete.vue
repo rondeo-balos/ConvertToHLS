@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import { Head } from '@inertiajs/vue3';
+import PrimaryButton from '@/Components/PrimaryButton.vue';
 
 
 /** working example from https://github.com/datlife
@@ -63,7 +64,11 @@ const updateQuality = (newQuality) => {
 
 <template>
     <Head title="Conversion Completed!" />
-    <video id="player" controls playsinline class="!w-full" preload="none">
-        <source type="application/x-mpegURL" :src="playlist">
-    </video>
+    <div class="w-screen min-h-screen flex items-center justify-center gap-10">
+        <h1 class="text-3xl font-bold text-gray-900">Convert Any Video Into Streamable (HLS) Format</h1>
+        <video id="player" controls playsinline class="max-w-[900px] aspect-video rounded" preload="none">
+            <source type="application/x-mpegURL" :src="playlist">
+        </video>
+        <PrimaryButton type="submit" class="py-3 px-10 !font-bold !text-base">Download Files</PrimaryButton>
+    </div>
 </template>

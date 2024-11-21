@@ -24,14 +24,53 @@ class ConvertController extends Controller {
     }
     
     public function convert( Request $request ) {
+        ini_set('upload_max_filesize', '5000M');
         // Validate the uploaded video
         $request->validate([
-            'video' => 'required|mimes:mp4|max:5242880', // Limit to 5GB for example
-            'resolutions' => 'required'
+            'video' => 'required|mimes:mp4,avi,mkv,mov,flv,wmv,webm,mpeg,mpg,ogv|max:5242880', // Limit to 5GB for example
+            'resolutions' => 'required|array' // [ "240p", "360p", "480p", "720p", "1080p" ]
         ]);
 
         // Get the uploaded file
         $video = $request->file('video');
+        
+        try {
+            $converted = $this->convertVideo( $video, $request->resolutions );
+        } catch( \Exception $e ) {
+            return Redirect::back()->with( 'error', 'Unable to convert video' );
+        }
+
+        return Redirect::route( 'complete', [
+            'playlist' => "storage/hls/{$converted['uniqueKey']}/{$converted['filename']}/master.m3u8"
+        ]);
+    }
+
+    public function api( Request $request ) {
+        ini_set('upload_max_filesize', '5000M');
+        // Validate the uploaded video
+        $request->validate([
+            'video' => 'required|mimes:mp4,avi,mkv,mov,flv,wmv,webm,mpeg,mpg,ogv|max:5242880', // Limit to 5GB for example
+            'resolutions' => 'required|array' // [ "240p", "360p", "480p", "720p", "1080p" ]
+        ]);
+
+        $video = $request->file('video');
+
+        try {
+            $converted = $this->convertVideo( $video, $request->resolutions );
+        } catch( \Exception $e ) {
+            return response()->json([
+                'message' => 'Unable to convert video',
+                'playlist' => null
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'HLS conversion completed!',
+            'playlist' => "storage/hls/{$converted['uniqueKey']}/{$converted['filename']}/master.m3u8"
+        ]);
+    }
+    
+    protected function convertVideo( $video, array $resolutions ): array {
         $filename = pathinfo($video->getClientOriginalName(), PATHINFO_FILENAME);
 
         // Save the uploaded video locally
@@ -41,8 +80,10 @@ class ConvertController extends Controller {
             throw new \Exception( 'Unable to upload file!' );
         }
 
+        $uniqueKey = fake()->unique()->randomKey();
+
         // Output HLS directory
-        $hlsDirectory = storage_path("app/public/hls/{$filename}");
+        $hlsDirectory = storage_path("app/public/hls/{$uniqueKey}/{$filename}");
         if (!file_exists($hlsDirectory)) {
             mkdir($hlsDirectory, 0755, true);
         }
@@ -80,7 +121,7 @@ class ConvertController extends Controller {
         ];
 
         // Select only the requested resolutions
-        $formats = array_intersect_key( $formats, array_flip($request->resolutions) );
+        $formats = array_intersect_key( $formats, array_flip($resolutions) );
 
         // Process video for each resolution
         foreach ($formats as $resolution => $details) {
@@ -112,11 +153,18 @@ class ConvertController extends Controller {
         // Delete original video
         unlink(storage_path("app/private/{$videoPath}"));
 
-        //return response()->json(['message' => 'HLS conversion completed!', 'playlist' => "storage/hls/{$filename}/master.m3u8"]);
+        $id = Convert::create([
+            'user' => null,
+            'directory' => $hlsDirectory,
+            'resolutions' => json_encode($resolutions)
+        ])->id;
 
-        return Redirect::route( 'complete', [
-            'playlist' => "storage/hls/{$filename}/master.m3u8"
-        ]);
+        return [
+            'id' => $id,
+            'uniqueKey' => $uniqueKey,
+            'filename' => $filename,
+            'directory' => $hlsDirectory
+        ];
     }
 
 }

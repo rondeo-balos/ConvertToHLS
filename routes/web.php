@@ -7,7 +7,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [ConvertController::class, 'index'])->name( 'home' );
 Route::post( '/convert', [ConvertController::class, 'convert'])->name( 'convert' );
-Route::get('/complete', [ConvertController::class, 'complete'])->name( 'complete' );
+Route::get('/convert/complete', [ConvertController::class, 'complete'])->name( 'convert.complete' );
+Route::post( '/convert/api', [ConvertController::class, 'api'])->name( 'convert.api' );
 
 /*Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
