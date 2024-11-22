@@ -18,6 +18,9 @@
         <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
         <script src="https://cdn.rawgit.com/video-dev/hls.js/18bb552/dist/hls.min.js"></script>
         <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+
+        <script src="https://kit.fontawesome.com/6c77f7ddce.js" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/resumablejs@1.1.0/resumable.min.js"crossorigin="anonymous"></script>
     </head>
     <body class="font-sans antialiased">
         @inertia

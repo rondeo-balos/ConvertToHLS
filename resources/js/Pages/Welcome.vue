@@ -38,7 +38,7 @@ const handleUpload = () => {
             <template v-if="!form.progress || form.hasErrors">
                 <div class="group bg-red-600 border rounded-lg h-12 relative w-full flex items-center justify-center">
                     <input type="file" @input="form.video = $event.target.files[0]" class="absolute left-0 top-0 right-0 bottom-0 opacity-0 h-full w-full cursor-pointer" accept="video/mp4,video/x-msvideo,video/x-matroska,video/quicktime,video/x-flv,video/x-ms-wmv,video/webm,video/mpeg,video/ogg">
-                    <p class="font-semibold text-white">{{ form.video.name ?? 'Click to Choose a file' }}</p>
+                    <p class="font-semibold text-white" v-html="form.video.name ?? `<i class='fa-solid fa-file-circle-plus me-3'></i> Click to Choose a file`"></p>
                 </div>
                 
                 <span v-show="showEmpty" class="text-sm text-red-700">Please choose at least one of these resolutions</span>
@@ -55,8 +55,14 @@ const handleUpload = () => {
             <progress v-if="form.progress" :value="form.progress.percentage" max="100" class="h-2 rounded-lg overflow-hidden w-full progress">
                 {{ form.progress?.percentage }}%
             </progress>
-            <span v-if="form.progress?.percentage == 100">Video Processing & Converting...</span>
-            <span v-else>Uploading...</span>
+            <span v-if="form.progress?.percentage == 100" class="flex flex-row items-center justify-center gap-2">
+                <i class="fa-solid fa-spinner animate-spin"></i>
+                Video Processing & Converting...
+            </span>
+            <span v-if="form.progress" class="flex flex-row items-center justify-center gap-2">
+                <i class="fa-solid fa-cloud-arrow-up animate-bounce"></i>
+                Uploading Video. Please wait...
+            </span>
         </form>
         <p class="text-sm"><a href="#" class="text-blue-700">How does this work?</a></p>
         <p class="text-xs">By proceeding, you agree to our <a href="#" class="text-blue-700">Terms of Use</a>.</p>

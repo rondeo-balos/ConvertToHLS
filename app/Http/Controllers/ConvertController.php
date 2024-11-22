@@ -24,7 +24,6 @@ class ConvertController extends Controller {
     }
     
     public function convert( Request $request ) {
-        ini_set('upload_max_filesize', '5000M');
         // Validate the uploaded video
         $request->validate([
             'video' => 'required|mimes:mp4,avi,mkv,mov,flv,wmv,webm,mpeg,mpg,ogv|max:5242880', // Limit to 5GB for example
@@ -46,7 +45,6 @@ class ConvertController extends Controller {
     }
 
     public function api( Request $request ) {
-        ini_set('upload_max_filesize', '5000M');
         // Validate the uploaded video
         $request->validate([
             'video' => 'required|mimes:mp4,avi,mkv,mov,flv,wmv,webm,mpeg,mpg,ogv|max:5242880', // Limit to 5GB for example
