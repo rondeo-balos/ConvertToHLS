@@ -66,9 +66,12 @@ const updateQuality = (newQuality) => {
     <Head title="Conversion Completed!" />
     <div class="w-screen min-h-screen flex flex-col items-center justify-center gap-10">
         <h1 class="text-3xl font-bold text-gray-900">Convert Any Video Into Streamable (HLS) Format</h1>
-        <video id="player" controls playsinline class="max-w-[900px] aspect-video rounded" preload="none">
-            <source type="application/x-mpegURL" :src="playlist">
-        </video>
-        <PrimaryButton type="submit" class="py-3 px-10 !font-bold !text-base">Download Files</PrimaryButton>
+        <div class="max-w-[1200px] w-full aspect-video rounded-xl overflow-hidden">
+            <video id="player" controls playsinline class="!w-full" preload="none">
+                <source type="application/x-mpegURL" :src="playlist">
+            </video>
+        </div>
+        <PrimaryButton type="submit" class="py-3 px-10 !font-bold !text-base">Download Files (zip)</PrimaryButton>
+        {{ playlist }}
     </div>
 </template>

@@ -6,5 +6,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 
 Schedule::call( function() {
-    Convert::where( 'expires', '<', Carbon::now() )->delete();
+    $convert = Convert::where( 'expires', '<', Carbon::now() );
+    unlink( $convert->directory );
+    $convert->delete();
 })->daily();
