@@ -10,6 +10,9 @@ use FFMpeg\FFMpeg;
 use FFMpeg\Format\Video\X264;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
+use Pion\Laravel\ChunkUpload\Handler\HandlerFactory;
+use Pion\Laravel\ChunkUpload\Receiver\FileReceiver;
+use Storage;
 
 class ConvertController extends Controller {
 
@@ -22,24 +25,71 @@ class ConvertController extends Controller {
             'playlist' => $request->playlist
         ]);
     }
+
+    public function upload( Request $request ) {
+        $receiver = new FileReceiver( 'file', $request, HandlerFactory::classFromRequest( $request ) );
+        if( !$receiver->isUploaded() ) {
+            // file not uploaded
+        }
+
+        $fileReceived = $receiver->receive();
+        if( $fileReceived->isFinished() ) {
+            $file = $fileReceived->getFile(); // get file
+            
+            $extension = $file->getClientOriginalExtension();
+            $fileName = str_replace('.'.$extension, '', $file->getClientOriginalName()); //file name without extenstion
+            $fileName .= '_' . md5(time()) . '.' . $extension; // a unique file name
+            
+            // Group files by mime type
+            $mime = str_replace('/', '-', $file->getMimeType());
+            // Group files by the date (week
+            $dateFolder = date("Y-m-W");
+
+            // Build the file path
+            $filePath = "upload/{$mime}/{$dateFolder}/";
+            $finalPath = storage_path("app/".$filePath);
+
+            // move the file name
+            $file->move($finalPath, $fileName);
+
+            return [
+                'path' => $filePath,
+                'filename' => $fileName,
+                'mime_type' => $mime
+            ];
+        }
+
+        // return percentage information
+        $handler = $fileReceived->handler();
+        return [
+            'done' => $handler->getPercentageDone(),
+            'status' => true
+        ];
+    }
     
     public function convert( Request $request ) {
         // Validate the uploaded video
         $request->validate([
-            'video' => 'required|mimes:mp4,avi,mkv,mov,flv,wmv,webm,mpeg,mpg,ogv|max:5242880', // Limit to 5GB for example
+            'filename' => 'required|string',
+            'video' => 'required|string',
             'resolutions' => 'required|array' // [ "240p", "360p", "480p", "720p", "1080p" ]
         ]);
 
         // Get the uploaded file
-        $video = $request->file('video');
+        $video = $request->video;
+        $filename = $request->filename;
+        $resolutions = $request->resolutions;
         
         try {
-            $converted = $this->convertVideo( $video, $request->resolutions );
+            $converted = $this->convertVideo( $filename, $video, $resolutions );
         } catch( \Exception $e ) {
+            \Log::error( $e->getLine() );
+            \Log::error( $e->getMessage() );
+            unlink(storage_path( "app/{$video}{$filename}" ));
             return Redirect::back()->with( 'error', 'Unable to convert video' );
         }
 
-        return Redirect::route( 'complete', [
+        return Redirect::route( 'convert.complete', [
             'playlist' => "storage/hls/{$converted['uniqueKey']}/{$converted['filename']}/master.m3u8"
         ]);
     }
@@ -54,7 +104,12 @@ class ConvertController extends Controller {
         $video = $request->file('video');
 
         try {
-            $converted = $this->convertVideo( $video, $request->resolutions );
+            
+            $filename = pathinfo($video->getClientOriginalName(), PATHINFO_FILENAME);
+            // Save the uploaded video locally
+            $videoPath = $video->storeAs('videos', $video->getClientOriginalName());
+            $converted = $this->convertVideo( $filename, $videoPath, $request->resolutions );
+
         } catch( \Exception $e ) {
             return response()->json([
                 'message' => 'Unable to convert video',
@@ -68,17 +123,13 @@ class ConvertController extends Controller {
         ]);
     }
     
-    protected function convertVideo( $video, array $resolutions ): array {
-        $filename = pathinfo($video->getClientOriginalName(), PATHINFO_FILENAME);
-
-        // Save the uploaded video locally
-        $videoPath = $video->storeAs('videos', $video->getClientOriginalName());
+    protected function convertVideo( $filename, $videoPath, array $resolutions ): array {
 
         if( !$videoPath ) {
             throw new \Exception( 'Unable to upload file!' );
         }
 
-        $uniqueKey = fake()->unique()->randomKey();
+        $uniqueKey = 'test';
 
         // Output HLS directory
         $hlsDirectory = storage_path("app/public/hls/{$uniqueKey}/{$filename}");
@@ -123,7 +174,7 @@ class ConvertController extends Controller {
 
         // Process video for each resolution
         foreach ($formats as $resolution => $details) {
-            $video = $ffmpeg->open(storage_path("app/private/{$videoPath}"));
+            $video = $ffmpeg->open(storage_path("app/{$videoPath}{$filename}"));
             $format = (new X264())->setKiloBitrate($details['bitrate'])->setAdditionalParameters([
                 '-crf', '10',
                 '-force_key_frames', 'expr:gte(t,n_forced*2)',
@@ -149,7 +200,7 @@ class ConvertController extends Controller {
         file_put_contents("{$hlsDirectory}/master.m3u8", $masterPlaylist);
         
         // Delete original video
-        unlink(storage_path("app/private/{$videoPath}"));
+        unlink(storage_path("app/{$videoPath}{$filename}"));
 
         $id = Convert::create([
             'user' => null,
