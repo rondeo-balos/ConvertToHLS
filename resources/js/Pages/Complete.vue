@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, ref } from 'vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 
 
@@ -71,7 +71,9 @@ const updateQuality = (newQuality) => {
                 <source type="application/x-mpegURL" :src="playlist">
             </video>
         </div>
-        <PrimaryButton type="submit" class="py-3 px-10 !font-bold !text-base">Download Files (zip)</PrimaryButton>
-        {{ playlist }}
+        <div class="flex flex-row items-center justify-center gap-5">
+            <a :href="playlist.replace( '.m3u8', '.zip' )" class="py-3 px-10 !font-bold !text-base inline-flex items-center rounded-md border border-transparent bg-gray-800 uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-gray-700 focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 active:bg-gray-900 dark:bg-gray-200 dark:text-gray-800 dark:hover:bg-white dark:focus:bg-white dark:focus:ring-offset-gray-800 dark:active:bg-gray-300">Download Files (zip)</a>
+            <PrimaryButton class="py-3 px-10 !font-bold !text-base" @click.prevent="router.visit( route( 'home' ) )">Convert Another Video</PrimaryButton>
+        </div>
     </div>
 </template>

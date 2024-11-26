@@ -4,6 +4,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { onMounted, ref } from 'vue';
+import { useAutoAnimate } from '@formkit/auto-animate/vue'
 
 const inputFile = ref(null);
 const progress = ref(0);
@@ -63,12 +64,14 @@ resumable.on( 'fileSuccess', (file, response) => {
     form.filename = response.filename;
     form.post( route('convert') );
 });
+
+const [autoAnimate] = useAutoAnimate()
 </script>
 
 <template>
     <Head title="Upload Video" />
     
-    <div class="w-full min-h-screen flex flex-col gap-10 justify-center items-center">
+    <div class="w-full min-h-screen flex flex-col gap-10 justify-center items-center" ref="autoAnimate">
         <h1 class="text-3xl font-bold text-gray-900">Convert Any Video Into Streamable (HLS) Format</h1>
         <form @submit.prevent="" class="border-4 border-dashed border-slate-400 bg-gray-100 rounded-xl shadow p-10 flex flex-col gap-5 justify-center items-center mx-auto max-w-[600px] max-h-[500px] w-full h-full">
             <template v-if="progress <= 0">

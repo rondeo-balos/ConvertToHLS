@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use FFMpeg\Coordinate\Dimension;
 use FFMpeg\FFMpeg;
 use FFMpeg\Format\Video\X264;
+use Storage;
 
 class Convert {
 
@@ -13,7 +14,7 @@ class Convert {
             throw new \Exception( 'Unable to upload file!' );
         }
 
-        $uniqueKey = 'test';
+        $uniqueKey = date('YmdHis');
 
         // Output HLS directory
         $hlsDirectory = storage_path("app/public/hls/{$uniqueKey}/{$filename}");
@@ -82,6 +83,7 @@ class Convert {
         }
 
         file_put_contents("{$hlsDirectory}/master.m3u8", $masterPlaylist);
+        self::zipPlaylist( $hlsDirectory );
         
         // Delete original video
         unlink(storage_path("app/{$videoPath}{$filename}"));
@@ -98,6 +100,35 @@ class Convert {
             'filename' => $filename,
             'directory' => $hlsDirectory
         ];
+    }
+
+    private static function zipPlaylist( $hlsDirectory ) {
+        $zip = new \ZipArchive;
+        $filename = "{$hlsDirectory}/master.zip";
+
+        if( $zip->open( $filename, \ZipArchive::CREATE | \ZipArchive::OVERWRITE ) === TRUE ) {
+            $files = glob($hlsDirectory . '/*'); // Scan all files in the directory manually
+            // Debugging: Output list of files to process
+            if( empty($files) ) {
+                throw new \Exception("No files found in directory: {$hlsDirectory}");
+            }
+
+            foreach( $files as $file ) {
+                if( $file == "{$hlsDirectory}/.gitignore" || $file == "{$hlsDirectory}/master.zip" )
+                    continue; // Skip these files
+
+                //\Log::info( "current file iteration: {$file}" );
+                
+                $relativeNameInZipFile = str_replace("{$hlsDirectory}/", '', $file);
+                $zip->addFile("{$file}", $relativeNameInZipFile);
+            }
+
+            if (!$zip->close()) {
+                throw new \Exception("Failed to create ZIP file: {$filename}");
+            }
+        } else {
+            throw new \Exception("Could not open ZIP file for writing: {$filename}");
+        }
     }
 
 }
