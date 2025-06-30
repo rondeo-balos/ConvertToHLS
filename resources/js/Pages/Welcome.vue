@@ -29,7 +29,7 @@ let resumable = new Resumable({
         _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
     },
     fileType: ['mp4','avi','mkv','mov','flv','wmv','webm','mpeg','mpg','ogv'],
-    chunkSize: 10*1024*1024,
+    chunkSize: 5*1024*1024,
     headers: {
         'Accept': 'application/json'
     },
